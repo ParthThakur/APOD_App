@@ -1,7 +1,5 @@
 import sys
 import os
-import datetime
-import random
 import requests
 import re
 import io
@@ -17,8 +15,8 @@ class ApodApp(QtWidgets.QMainWindow):
         self.astro_URL = 'https://apod.nasa.gov/apod/ap[%%].html'
         self.astro_image_URL = 'https://apod.nasa.gov/apod/'
         self.save_path = os.path.expanduser('~\Pictures\APOD')
-        print(self.save_path)
-        
+        self.s = requests.Session()
+
         super(ApodApp, self).__init__()
         self.setGeometry(50, 150, 700, 500)
         self.setWindowTitle("Astronomy picture of the day")
@@ -74,7 +72,7 @@ class ApodApp(QtWidgets.QMainWindow):
             raw = str(raw)[:pos[1]]
             soup_ = BeautifulSoup(raw, 'html.parser')
             raw = str(soup_.findAll('p')[0].text)
-            return (raw.replace('\n', ' ')).replace('  ', ' ')
+            return (raw.replace('\n', ' ')).replace('  ', ' ')[1:]
 
         def get_image():
             print(self.title)
@@ -86,7 +84,8 @@ class ApodApp(QtWidgets.QMainWindow):
             return {'compressed': image_link_compressed, 'full-res': image_link_full_res}
         
         image_URL = self.astro_URL.replace('[%%]', self.astro_date)
-        response = requests.get(image_URL)
+        response = self.s.get(image_URL)
+
         if response.status_code != 200:
             print(self.invalid_date)
             self.home()
@@ -96,13 +95,21 @@ class ApodApp(QtWidgets.QMainWindow):
             self.welcome_text.resize(260, 50)
             
         soup = BeautifulSoup(response.text, 'html.parser')
-        self.title = soup.findAll('b')[0].text
+        self.title = soup.findAll('b')[0].text[1:]
         self.image_links = get_image()
         self.image_explanation = get_explanation()
         self.showPicture()
 
     def showPicture(self):
-        picture_bytes = requests.get(self.image_links['compressed'])
+
+        def download_image():
+            image_raw = self.s.get(self.image_links['full-res'])
+            image_bytes = io.BytesIO(image_raw.content)
+            image = Image.open(image_bytes).convert("RGB")
+            image.save(self.save_path + '\\' + self.title.replace(':', '') + '.jpg', 'JPEG',
+                       dpi=[300, 300], quality=100)
+
+        picture_bytes = self.s.get(self.image_links['compressed'])
         img_bytes = io.BytesIO(picture_bytes.content)
         temp_image = Image.open(img_bytes).convert("RGB")
         tf = tempfile.NamedTemporaryFile(delete=True)
@@ -116,17 +123,20 @@ class ApodApp(QtWidgets.QMainWindow):
         pix_label.resize(pixmap.size())
         pix_label.show()
         self.resize(pixmap.width(), pixmap.height()+200)
-        
-        self.downloadPicture(pixmap.width(), pixmap.height())
 
-    def downloadPicture(self, width, height):
+        title_text = QtWidgets.QLabel(self)
+        title_text.setText(self.title)
+        title_text.resize(self.width(), 15)
+        title_text.move(20, 505)
+        title_text.setFont(QtGui.QFont("Times New Roman", 10, QtGui.QFont.Bold))
+        title_text.show()
 
-        def download_image():
-            image_raw = requests.get(self.image_links['full-res'], stream = True)
-            image_bytes = io.BytesIO(image_raw.content)
-            image = Image.open(image_bytes).convert("RGB")
-            image.save(self.save_path + '\\' + self.title.replace(':', '') + '.jpg', 'JPEG',
-                       dpi=[300, 300], quality=100)
+        explanation_text = QtWidgets.QLabel(self)
+        explanation_text.setText(self.image_explanation)
+        explanation_text.resize(self.width()-30, 115)
+        explanation_text.setWordWrap(True)
+        explanation_text.move(20, 515)
+        explanation_text.show()
 
         download_button = QtWidgets.QPushButton("Download", self)
         exit_button = QtWidgets.QPushButton("Exit", self)
@@ -135,9 +145,9 @@ class ApodApp(QtWidgets.QMainWindow):
         download_button.minimumSizeHint()
         exit_button.minimumSizeHint()
         back_button.minimumSizeHint()
-        download_button.move(20, self.height()-180)
-        exit_button.move(120, self.height()-180)
-        back_button.move(220, self.height()-180)
+        download_button.move(20, 650)
+        exit_button.move(120, 650)
+        back_button.move(220, 650)
 
         download_button.clicked.connect(download_image)
         exit_button.clicked.connect(sys.exit)
