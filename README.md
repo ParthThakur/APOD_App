@@ -9,6 +9,7 @@ Functions that don't work currently:
   
 
 List of known dates to crash app:
-  05/03/2018
-  26/02/2018
+
+    05/03/2018  
+    26/02/2018
  
