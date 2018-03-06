@@ -4,6 +4,7 @@ import requests
 import re
 import io
 import tempfile
+import webbrowser
 from PIL import Image
 from bs4 import BeautifulSoup
 from PyQt5 import QtGui, QtWidgets, QtCore
@@ -79,12 +80,23 @@ class ApodApp(QtWidgets.QMainWindow):
 
             picture_path = soup.findAll('a')[1]
             image_link_full_res = self.astro_image_URL + picture_path.get('href')
-            picture_path = soup.findAll('img')[0]
-            image_link_compressed = self.astro_image_URL + picture_path.get('src')
-            return {'compressed': image_link_compressed, 'full-res': image_link_full_res}
-        
-        image_URL = self.astro_URL.replace('[%%]', self.astro_date)
-        response = self.s.get(image_URL)
+
+            try:
+                picture_path = soup.findAll('img')[0]
+                image_link_compressed = self.astro_image_URL + picture_path.get('src')
+                return {'compressed': image_link_compressed, 'full-res': image_link_full_res}
+            except IndexError:
+                popup = QtWidgets.QMessageBox.question(self, "No Image found.",
+                                                       "APOD has uploaded a video.\nOpen link in Browser?",
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                if popup == QtWidgets.QMessageBox.Yes:
+                    webbrowser.open_new_tab(self.image_URL)
+                    sys.exit()
+                else:
+                    sys.exit()
+
+        self.image_URL = self.astro_URL.replace('[%%]', self.astro_date)
+        response = self.s.get(self.image_URL)
 
         if response.status_code != 200:
             print(self.invalid_date)
@@ -108,6 +120,9 @@ class ApodApp(QtWidgets.QMainWindow):
             image = Image.open(image_bytes).convert("RGB")
             image.save(self.save_path + '\\' + self.title.replace(':', '') + '.jpg', 'JPEG',
                        dpi=[300, 300], quality=100)
+
+        def open_browser():
+            webbrowser.open_new_tab(self.image_URL)
 
         picture_bytes = self.s.get(self.image_links['compressed'])
         img_bytes = io.BytesIO(picture_bytes.content)
@@ -140,22 +155,22 @@ class ApodApp(QtWidgets.QMainWindow):
 
         download_button = QtWidgets.QPushButton("Download", self)
         exit_button = QtWidgets.QPushButton("Exit", self)
-        back_button = QtWidgets.QPushButton("Back", self)
+        browser_button = QtWidgets.QPushButton("Show in Browser", self)
 
         download_button.minimumSizeHint()
         exit_button.minimumSizeHint()
-        back_button.minimumSizeHint()
+        browser_button.minimumSizeHint()
         download_button.move(20, 650)
-        exit_button.move(120, 650)
-        back_button.move(220, 650)
+        browser_button.move(120, 650)
+        exit_button.move(220, 650)
 
         download_button.clicked.connect(download_image)
         exit_button.clicked.connect(sys.exit)
-        back_button.clicked.connect(self.home)
+        browser_button.clicked.connect(open_browser)
 
         download_button.show()
         exit_button.show()
-        back_button.show()
+        browser_button.show()
         
 
 def run():
