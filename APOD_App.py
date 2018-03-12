@@ -115,6 +115,7 @@ class ApodApp(QtWidgets.QMainWindow):
     def showPicture(self):
 
         def download_image():
+
             image_raw = self.s.get(self.image_links['full-res'])
             image_bytes = io.BytesIO(image_raw.content)
             image = Image.open(image_bytes).convert("RGB")
@@ -128,6 +129,7 @@ class ApodApp(QtWidgets.QMainWindow):
         img_bytes = io.BytesIO(picture_bytes.content)
         temp_image = Image.open(img_bytes).convert("RGB")
         tf = tempfile.NamedTemporaryFile(delete=True)
+        print(tf.name)
         temp_image.save(tf.name + '.jpg', format=None)
         pixmap = QtGui.QPixmap(tf.name + '.jpg')
         tf.close()
@@ -179,4 +181,5 @@ def run():
     sys.exit(app.exec_())
 
 
-run()
+if __name__ == '__main__':
+    run()
