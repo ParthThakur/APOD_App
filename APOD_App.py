@@ -1,3 +1,10 @@
+"""
+A python GUI App that pulls the Astronomy Picture of the Day (APOD) from apod.nasa.gov
+The app uses a calender to take user input of date and then displays the image on that date, with it's title and
+explanation below.
+"""
+
+# Import all required libraries.
 import sys
 import os
 import requests
@@ -10,15 +17,28 @@ from bs4 import BeautifulSoup
 from PyQt5 import QtGui, QtWidgets, QtCore
 
 
+# Create ApodApp class for the GUI
 class ApodApp(QtWidgets.QMainWindow):
 
     def __init__(self):
+
+        # The URL for the APOD is of the format ~/apod/apYYMMDD.html
+        # [%%] will be replaced my the date chosen by user.
         self.astro_URL = 'https://apod.nasa.gov/apod/ap[%%].html'
+
+        # Prefix for hi-res image.
         self.astro_image_URL = 'https://apod.nasa.gov/apod/'
+
+        # Local directory to save image.
         self.save_path = os.path.expanduser('~\Pictures\APOD')
+
+        # Start requests session.
         self.s = requests.Session()
 
+
         super(ApodApp, self).__init__()
+
+        # Set properties of of GUI window.
         self.setGeometry(50, 150, 700, 500)
         self.setWindowTitle("Astronomy picture of the day")
         self.setWindowIcon(QtGui.QIcon("favicon.jpg"))
@@ -36,26 +56,33 @@ class ApodApp(QtWidgets.QMainWindow):
         self.home()
 
     def home(self):
-        
+        # Home page of the App.
+
+        # Create and display calendar object.
         calendar = QtWidgets.QCalendarWidget(self)
         calendar.setGridVisible(True)
         calendar.move(20, 50)
         calendar.resize(320, 200)
         calendar.setMinimumDate(QtCore.QDate(1995, 6, 16))
         calendar.setMaximumDate(QtCore.QDate.currentDate())
-        calendar.clicked[QtCore.QDate].connect(self.getApodDate)
+        calendar.clicked[QtCore.QDate].connect(self.get_apod_date)
 
+        # Get date selected by calendar object and change date to desired format. (YYMMDD)
         date = calendar.selectedDate()
         a_date = [int(str(date.year())[2:]), date.month(), date.day()]
         self.astro_date = ''.join(list(map(str, a_date)))
 
+        # Create "See Picture" button. Connect it to get_picture function.
         see_button = QtWidgets.QPushButton("See Picture", self)
         see_button.move(20, 280)
-        see_button.clicked.connect(self.getPicture)
+        see_button.clicked.connect(self.get_picture)
 
+        # Display all objects in the window.
         self.show()
 
-    def getApodDate(self, date):
+    def get_apod_date(self, date):
+        # Function to clean date string from calendar object and return desired format. (YYMMDD)
+
         a_date = [int(str(date.year())[2:]), date.month(), date.day()]
         b_date = list(map(str, a_date))
         self.astro_date = ''
@@ -64,8 +91,8 @@ class ApodApp(QtWidgets.QMainWindow):
                 self.astro_date = self.astro_date + '0' + x
             else:
                 self.astro_date = self.astro_date + x
-                
-    def getPicture(self):
+
+    def get_picture(self):
         
         def get_explanation():
             raw = soup.findAll('p')[2]
