@@ -196,7 +196,7 @@ class ApodApp(QMainWindow):
             :return:
             """
 
-            image_raw = self.s.get(self.image_links['full-res'])
+            image_raw = self.apod_session.get(self.image_links['full-res'])
             image_bytes = io.BytesIO(image_raw.content)
             image = Image.open(image_bytes).convert("RGB")
             image.save(self.save_path + '\\' + self.title.replace(':', '') +
@@ -213,11 +213,10 @@ class ApodApp(QMainWindow):
 
         # Create a temporary file with the low-res version of image.
         # The temporary file is deleted when the program exits.
-        picture_bytes = self.s.get(self.image_links['compressed'])
+        picture_bytes = self.apod_session.get(self.image_links['compressed'])
         img_bytes = io.BytesIO(picture_bytes.content)
         temp_image = Image.open(img_bytes).convert("RGB")
         tf = tempfile.NamedTemporaryFile(delete=True)
-        print(tf.name)  # Print title to console.
         temp_image.save(tf.name + '.jpg', format=None)
         pixmap = QtGui.QPixmap(tf.name + '.jpg')
         tf.close()
