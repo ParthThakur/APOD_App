@@ -39,7 +39,7 @@ class ApodApp(QMainWindow):
         self.save_path = os.path.expanduser('~\Pictures\APOD')
 
         # Start requests session.
-        self.s = requests.Session()
+        self.apod_session = requests.Session()
 
         super(ApodApp, self).__init__()
 
@@ -57,14 +57,16 @@ class ApodApp(QMainWindow):
         self.welcome_text.move(20, 10)
         self.welcome_text.resize(260, 50)
 
-        self.invalid_date = "The date entered is out of range. Please enter a " \
+        self.invalid_date = "The date entered is out of range. Please enter a "\
                             "date between" \
                             "June 16, 1995 and today."
 
         self.home()
 
     def home(self):
-        # Home page of the App.
+        """
+        Home page of the App. 
+        """
 
         # Create and display calendar object.
         calendar = QCalendarWidget(self)
@@ -90,8 +92,10 @@ class ApodApp(QMainWindow):
         self.show()
 
     def get_apod_date(self, date):
-        # Function to clean date string from calendar object and return desired 
-        # format. (YYMMDD)
+        """
+        Function to clean date string from calendar object and return desired
+        format. (YYMMDD)
+        """
 
         a_date = [int(str(date.year())[2:]), date.month(), date.day()]
         b_date = list(map(str, a_date))
@@ -103,8 +107,16 @@ class ApodApp(QMainWindow):
                 self.astro_date = self.astro_date + x
 
     def get_picture(self):
+        """
+        Downloads the image and other attributes about the image.
+        :return:
+        """
 
         def get_explanation():
+            """
+            Extracts the explanation provided for the image.
+            :return:
+            """
             raw = soup.findAll('p')[2]
             pos = []
             for m in re.finditer("<p>", str(raw)):
@@ -115,6 +127,13 @@ class ApodApp(QMainWindow):
             return (raw.replace('\n', ' ')).replace('  ', ' ')[1:]
 
         def get_image():
+            """
+            Gets the actual image.
+
+            The image used for display purposes is a low resolution version.
+            This keeps the download time low for otherwise HD images.
+            :return:
+            """
             print(self.title)
 
             picture_path = soup.findAll('a')[1]
@@ -125,6 +144,9 @@ class ApodApp(QMainWindow):
                 image_link_compressed = self.astro_image_URL + picture_path.get('src')
                 return {'compressed': image_link_compressed,
                         'full-res': image_link_full_res}
+
+            # Certain days, apod uploads a video. Give user the option to view
+            # it in their web browser.
             except IndexError:
                 error_string = "APOD has uploaded a video.\n" \
                                "Open link in Browser?"
@@ -138,7 +160,7 @@ class ApodApp(QMainWindow):
                     sys.exit()
 
         self.image_URL = self.astro_URL.replace('[%%]', self.astro_date)
-        response = self.s.get(self.image_URL)
+        response = self.apod_session.get(self.image_URL)
 
         if response.status_code != 200:
             print(self.invalid_date)
@@ -148,15 +170,32 @@ class ApodApp(QMainWindow):
             self.welcome_text.move(20, 10)
             self.welcome_text.resize(260, 50)
 
+        # Create BeautifulSoup object, and extract important attributes.
         soup = BeautifulSoup(response.text, 'html.parser')
-        self.title = soup.findAll('b')[0].text[1:]
-        self.image_links = get_image()
-        self.image_explanation = get_explanation()
-        self.showPicture()
+        self.title = soup.findAll('b')[0].text[1:]  # Title
+        self.image_links = get_image()  # Image links.
+        self.image_explanation = get_explanation()  # Explanation
+        self.showPicture()  # Display downloaded picture.
 
     def showPicture(self):
+        """
+        This function displays the downloaded image for selected date.
+
+        The function draws over the home screen with all the attributes
+        extracted previously. It also let's the user download a high resolution
+        copy of the displayed image.
+
+        The downloaded image is saved in <User Profile>\Pictures\APOD
+        The images are named by their title.
+        :return:
+        """
 
         def download_image():
+            """
+            Downloads a high resolution version of the displayed image as JPEG.
+            :return:
+            """
+
             image_raw = self.s.get(self.image_links['full-res'])
             image_bytes = io.BytesIO(image_raw.content)
             image = Image.open(image_bytes).convert("RGB")
@@ -165,6 +204,11 @@ class ApodApp(QMainWindow):
                        dpi=[300, 300], quality=100)
 
         def open_browser():
+            """
+            Function opens image URL in user's default web browser.
+            :return:
+            """
+
             webbrowser.open_new_tab(self.image_URL)
 
         picture_bytes = self.s.get(self.image_links['compressed'])
