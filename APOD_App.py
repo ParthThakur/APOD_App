@@ -1,17 +1,21 @@
 """
-A python GUI App that pulls the Astronomy Picture of the Day (APOD) from apod.nasa.gov
-The app uses a calender to take user input of date and then displays the image on that date, with it's title and
+A python GUI App that pulls the Astronomy Picture of the Day (APOD) from
+apod.nasa.gov
+
+The app uses a calender to take user input of date and then displays the image 
+on that date, with it's title and
 explanation below.
 """
 
 # Import all required libraries.
 import sys
 import os
-import requests
 import re
 import io
 import tempfile
 import webbrowser
+
+import requests
 from PIL import Image
 from bs4 import BeautifulSoup
 from PyQt5 import QtGui, QtWidgets, QtCore
