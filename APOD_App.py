@@ -164,11 +164,10 @@ class ApodApp(QMainWindow):
 
         if response.status_code != 200:
             print(self.invalid_date)
-            self.home()
-            date_error = QLabel(self)
-            date_error.setText = self.invalid_date
-            self.welcome_text.move(20, 10)
-            self.welcome_text.resize(260, 50)
+            popup = QMessageBox.question(self, "No Image found.",
+                                         "Date is invalid!",
+                                         QMessageBox.Ok)
+            sys.exit()
 
         # Create BeautifulSoup object, and extract important attributes.
         soup = BeautifulSoup(response.text, 'html.parser')
