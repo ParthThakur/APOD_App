@@ -211,15 +211,20 @@ class ApodApp(QMainWindow):
 
             webbrowser.open_new_tab(self.image_URL)
 
+        # Create a temporary file with the low-res version of image.
+        # The temporary file is deleted when the program exits.
         picture_bytes = self.s.get(self.image_links['compressed'])
         img_bytes = io.BytesIO(picture_bytes.content)
         temp_image = Image.open(img_bytes).convert("RGB")
         tf = tempfile.NamedTemporaryFile(delete=True)
-        print(tf.name)
+        print(tf.name)  # Print title to console.
         temp_image.save(tf.name + '.jpg', format=None)
         pixmap = QtGui.QPixmap(tf.name + '.jpg')
         tf.close()
 
+        # Create a pixel map of the image. Scale the image such that image
+        # height is 500 pixels. Also resize GUI window to fit the image and
+        # explanation.
         pixmap = pixmap.scaledToHeight(500)
         pix_label = QLabel(self)
         pix_label.setPixmap(pixmap)
@@ -227,6 +232,7 @@ class ApodApp(QMainWindow):
         pix_label.show()
         self.resize(pixmap.width(), pixmap.height() + 200)
 
+        # Display title of Image.
         title_text = QLabel(self)
         title_text.setText(self.title)
         title_text.resize(self.width(), 15)
@@ -234,6 +240,7 @@ class ApodApp(QMainWindow):
         title_text.setFont(QtGui.QFont("Times New Roman", 10, QtGui.QFont.Bold))
         title_text.show()
 
+        # Display explanation of image.
         explanation_text = QLabel(self)
         explanation_text.setText(self.image_explanation)
         explanation_text.resize(self.width() - 30, 115)
@@ -241,10 +248,12 @@ class ApodApp(QMainWindow):
         explanation_text.move(20, 515)
         explanation_text.show()
 
+        # Create three buttons.
         download_button = QPushButton("Download", self)
         exit_button = QPushButton("Exit", self)
         browser_button = QPushButton("Show in Browser", self)
 
+        # Set dimensions of the three buttons.
         download_button.minimumSizeHint()
         exit_button.minimumSizeHint()
         browser_button.minimumSizeHint()
@@ -252,10 +261,12 @@ class ApodApp(QMainWindow):
         browser_button.move(120, 650)
         exit_button.move(220, 650)
 
+        # Assign functions to the buttons.
         download_button.clicked.connect(download_image)
         exit_button.clicked.connect(sys.exit)
         browser_button.clicked.connect(open_browser)
 
+        # Show the buttons.
         download_button.show()
         exit_button.show()
         browser_button.show()
